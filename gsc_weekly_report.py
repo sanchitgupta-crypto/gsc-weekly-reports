@@ -629,7 +629,7 @@ EMAIL_TEMPLATE = """
 </table>
 
 <!-- NEW QUERIES -->
-{% if new_queries %}
+{% if has_new_queries %}
 <h2>New Queries This Week ({{ new_queries | length }})</h2>
 <p style="font-size: 13px; color: #475569;">
     {% for q in new_queries[:30] %}
@@ -642,7 +642,7 @@ EMAIL_TEMPLATE = """
 {% endif %}
 
 <!-- POSITION 4-10 OPPORTUNITIES -->
-{% if striking_distance %}
+{% if striking_distance is not none %}
 <h2>Striking Distance (Position 4-10, High Impressions)</h2>
 <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">
     These queries rank on page 1 but below position 3. Small position improvements here unlock disproportionate click gains.
@@ -795,7 +795,10 @@ def build_report(dry_run=False, monthly=False):
         "page_performance": page_perf
     }
     insights = generate_insights(report_data)
-
+# Convert empty DataFrames to None for Jinja2 template boolean checks
+    striking = striking if not striking.empty else None
+    cluster_summary = cluster_summary if not cluster_summary.empty else None
+    page_type_summary = page_type_summary if not page_type_summary.empty else None
     # Render HTML
     template = Template(EMAIL_TEMPLATE)
     html = template.render(
@@ -826,6 +829,7 @@ def build_report(dry_run=False, monthly=False):
         page_type_summary=page_type_summary,
         top_pages=page_perf,
         new_queries=new_queries,
+      has_new_queries=len(new_queries) > 0,
         striking_distance=striking
     )
 
