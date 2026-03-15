@@ -1,0 +1,43 @@
+name: GSC Weekly Report
+
+on:
+  schedule:
+    # Runs every Monday at 00:30 UTC = 6:00 AM IST
+    - cron: '30 0 * * 1'
+  
+  # Lets you trigger manually from the Actions tab for testing
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials file
+        run: echo '${{ secrets.GSC_CREDENTIALS_JSON }}' > credentials.json
+
+      - name: Run weekly report
+        env:
+          GSC_SITE_URL: "sc-domain:squadstack.ai"
+          GSC_CREDENTIALS: "credentials.json"
+          SMTP_HOST: "smtp.gmail.com"
+          SMTP_PORT: "587"
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          REPORT_RECIPIENTS: ${{ secrets.REPORT_RECIPIENTS }}
+        run: python gsc_weekly_report.py
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f credentials.json
