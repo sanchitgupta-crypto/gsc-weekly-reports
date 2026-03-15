@@ -1,11 +1,10 @@
-name: GSC Weekly Report
+name: GSC Monthly Report
 
 on:
   schedule:
-    # Runs every Monday at 00:30 UTC = 6:00 AM IST
-    - cron: '30 0 * * 1'
+    # First Monday of each month at 01:00 UTC = 6:30 AM IST
+    - cron: '0 1 1-7 * 1'
   
-  # Lets you trigger manually from the Actions tab for testing
   workflow_dispatch:
 
 jobs:
@@ -27,7 +26,7 @@ jobs:
       - name: Write credentials file
         run: echo '${{ secrets.GSC_CREDENTIALS_JSON }}' > credentials.json
 
-      - name: Run weekly report
+      - name: Run monthly report
         env:
           GSC_SITE_URL: "sc-domain:squadstack.ai"
           GSC_CREDENTIALS: "credentials.json"
@@ -36,8 +35,47 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           REPORT_RECIPIENTS: ${{ secrets.REPORT_RECIPIENTS }}
-        run: python gsc_weekly_report.py
+        run: python gsc_weekly_report.py --monthly
 
       - name: Clean up credentials
         if: always()
         run: rm -f credentials.json
+```
+
+Commit to `main`.
+
+---
+
+**Step 7: Test it right now**
+
+Go to your repo > **Actions** tab. You'll see "GSC Weekly Report" in the left sidebar. Click it. Click the **Run workflow** button (top right) > **Run workflow** on the `main` branch.
+
+Watch it run. Green checkmark = email sent. If it fails, click into the run and expand the failing step to see the error log. Most common issues at this stage:
+
+- "File not found" on credentials: Double-check the `GSC_CREDENTIALS_JSON` secret has the full JSON content, not just the filename
+- SMTP auth error: Make sure 2-Step Verification is on for the Gmail account and you're using an App Password, not your regular password
+- GSC permission denied: Confirm the service account email was added to GSC with Full permission (Stage B)
+
+---
+
+**Step 8: Verify the email**
+
+Check your inbox. The subject line will be: **GSC Weekly | SquadStack.ai | Weekly: [date range]**
+
+The report will have the full breakdown: scorecards, insights, cluster analysis, top gaining/declining queries, page performance, striking distance opportunities, and new queries.
+
+---
+
+**What happens from here:**
+
+Every Monday at 6 AM IST, this runs automatically and lands in your inbox. The monthly roll-up ships on the first Monday of each month. You don't need to touch it again unless you want to add recipients (update the `REPORT_RECIPIENTS` secret) or modify keyword clusters (edit the Python script directly in GitHub).
+
+Your repo should look like this when done:
+```
+gsc-weekly-reports/
+  gsc_weekly_report.py
+  requirements.txt
+  .github/
+    workflows/
+      weekly-report.yml
+      monthly-report.yml
